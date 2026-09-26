@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piutang GR Adam Malik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #F7F6F3;
+    --bg-elevated: #FFFFFF;
+    --border: #E4E1D9;
+    --text: #22252A;
+    --text-dim: #6D6F72;
+    --text-faint: #9A9C9E;
+    --accent: #2B4FDE;
+    --accent-dim: #EEF1FC;
+    --good: #1E824C;
+    --warn: #B8590A;
+    --bad: #C0362C;
+    --shadow: 0 1px 2px rgba(20,20,20,.04);
+    --radius: 10px;
+    color-scheme: light;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #17181A;
+      --bg-elevated: #1F2124;
+      --border: #303236;
+      --text: #EDEDEC;
+      --text-dim: #A8AAAD;
+      --text-faint: #75777A;
+      --accent: #6D8BFF;
+      --accent-dim: #202A4A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #17181A;
+    --bg-elevated: #1F2124;
+    --border: #303236;
+    --text: #EDEDEC;
+    --text-dim: #A8AAAD;
+    --text-faint: #75777A;
+    --accent: #6D8BFF;
+    --accent-dim: #202A4A;
+    color-scheme: dark;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+  }
+  /* ---------- header ---------- */
+  .topbar{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .heading .eyebrow{
+    font-size: 14px;
+    color: var(--text-dim);
+    margin: 0 0 4px;
+  }
+  .heading h1{
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.05;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+  }
+  .meta-line{
+    font-size: 14px;
+    color: var(--text-dim);
+    margin: 3px 0;
+  }
+  .meta-line b{ color: var(--text); font-weight: 600; }
+  .controls{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+    flex-shrink: 0;
+    padding-top: 4px;
+  }
+  .switch-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-dim);
+    user-select:none;
+    cursor: pointer;
+  }
+  .switch-row input{
+    width: 17px; height: 17px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .refresh-btn{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .12s ease, opacity .12s ease;
+  }
+  .refresh-btn:hover{ transform: translateY(-1px); }
+  .refresh-btn:active{ transform: translateY(0); }
+  .refresh-btn:disabled{ opacity: .6; cursor: default; transform: none; }
+  .refresh-btn .spin{
+    display:inline-block;
+    line-height: 1;
+    transition: transform .5s ease;
+  }
+  .refresh-btn.loading .spin{ animation: spin 0.9s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  /* ---------- status banner ---------- */
+  .banner{
+    display:none;
+    align-items:flex-start;
+    gap:10px;
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .banner.show{ display:flex; }
+  .banner.info{ background: var(--accent-dim); color: var(--text); }
+  .banner.error{ background: rgba(192,54,44,.1); color: var(--bad); }
+  .banner.error b{ color: var(--bad); }
+  .banner-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top: 8px; }
+  .link-btn{
+    background: none; border: 1px solid currentColor; color: inherit;
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-family: inherit;
+    cursor: pointer;
+  }
+  .link-btn:hover{ opacity:.85; }
+  .diag{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 6px;
+    word-break: break-all;
+  }
+
+  /* ---------- kpi ---------- */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 26px;
+  }
+  .kpi{
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+  }
+  .kpi .label{ font-size: 13px; color: var(--text-dim); margin: 0 0 8px; }
+  .kpi .value{ font-family:"Source Serif 4", Georgia, serif; font-weight:700; font-size: 26px; line-height:1.1; }
+  .kpi .sub{ font-size: 12.5px; color: var(--text-faint); margin-top: 6px; }
+
+  /* ---------- panels ---------- */
+  .panel-row{
+    display:grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .panel{
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 20px 12px;
+    box-shadow: var(--shadow);
+    min-width: 0;
+  }
+  .panel h2{
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 2px;
+  }
+  .panel .panel-sub{
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin: 0 0 14px;
+  }
+  .chart-box{ position:relative; height: 260px; }
+  .chart-box.tall{ height: 300px; }
+
+  table.data-table{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.data-table th{
+    text-align:left;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 12px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.data-table td{
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.data-table td.num{ text-align:right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.data-table tr:last-child td{ border-bottom:none; }
+  .rank{ color: var(--text-faint); width: 20px; }
+
+  .skeleton{
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 30px 4px;
+    text-align:center;
+  }
+
+  footer.sync-foot{
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--text-faint);
+    text-align:center;
+  }
+
+  @media (max-width: 860px){
+    .kpi-grid{ grid-template-columns: repeat(2, 1fr); }
+    .panel-row{ grid-template-columns: 1fr; }
+    .topbar{ flex-direction: column; }
+    .controls{ width:100%; justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="heading">
+      <p class="eyebrow" id="eyebrow">Laporan piutang tersinkron dari Google Sheets</p>
+      <h1 id="title">Piutang GR Adam Malik</h1>
+      <p class="meta-line" id="metaPer">Per : —</p>
+      <p class="meta-line" id="metaSumber">Sumber: —</p>
+      <p class="meta-line" id="metaSync">Terakhir disinkron: <b id="metaSyncTime">belum pernah</b></p>
+    </div>
+    <div class="controls">
+      <label class="switch-row">
+        <input type="checkbox" id="autoRefreshToggle" checked>
+        Auto-refresh 60 dtk
+      </label>
+      <button class="refresh-btn" id="refreshBtn">
+        <span class="spin">↻</span> Refresh sekarang
+      </button>
+    </div>
+  </div>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi"><p class="label">Total piutang</p><p class="value" id="kpiTotal">—</p><p class="sub" id="kpiTotalSub">&nbsp;</p></div>
+    <div class="kpi"><p class="label">Jumlah faktur</p><p class="value" id="kpiCount">—</p><p class="sub">baris transaksi</p></div>
+    <div class="kpi"><p class="label">Jumlah debitur</p><p class="value" id="kpiDebitur">—</p><p class="sub">No. Cust unik</p></div>
+    <div class="kpi"><p class="label">Rata-rata umur piutang</p><p class="value" id="kpiAging">—</p><p class="sub">hari sejak jatuh tempo</p></div>
+  </div>
+
+  <div class="panel-row">
+    <div class="panel">
+      <h2>Umur piutang (aging)</h2>
+      <p class="panel-sub">Total nilai piutang dikelompokkan berdasarkan lama hari sejak jatuh tempo</p>
+      <div class="chart-box"><canvas id="agingChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Komposisi per jenis transaksi</h2>
+      <p class="panel-sub">Berdasarkan kolom Jenis</p>
+      <div class="chart-box"><canvas id="jenisChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <div class="panel">
+      <h2>Debitur dengan piutang terbesar</h2>
+      <p class="panel-sub">10 No. Cust dengan total nilai piutang tertinggi</p>
+      <div id="topDebiturBox"><div class="skeleton">Memuat data…</div></div>
+    </div>
+    <div class="panel">
+      <h2>Piutang per kolektor (SA)</h2>
+      <p class="panel-sub">Total nilai piutang yang ditangani tiap SA</p>
+      <div class="chart-box tall"><canvas id="saChart"></canvas></div>
+    </div>
+  </div>
+
+  <footer class="sync-foot" id="footNote">Menghubungkan ke Google Drive…</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var FILE_ID = "1tAZ5uaibOLfxr8ALyBe2yV128W5TU230h_DdsKpv44M";
+  var AUTO_MS = 60000;
+
+  var mcp = null;
+  var timer = null;
+  var hasEverSucceeded = false;
+  var retriedOnce = false;
+  var charts = {};
+
+  var els = {
+    banner: document.getElementById('banner'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    autoToggle: document.getElementById('autoRefreshToggle'),
+    footNote: document.getElementById('footNote'),
+    metaPer: document.getElementById('metaPer'),
+    metaSumber: document.getElementById('metaSumber'),
+    metaSyncTime: document.getElementById('metaSyncTime'),
+    kpiTotal: document.getElementById('kpiTotal'),
+    kpiTotalSub: document.getElementById('kpiTotalSub'),
+    kpiCount: document.getElementById('kpiCount'),
+    kpiDebitur: document.getElementById('kpiDebitur'),
+    kpiAging: document.getElementById('kpiAging'),
+    topDebiturBox: document.getElementById('topDebiturBox'),
+    title: document.getElementById('title')
+  };
+
+  function rupiah(n){
+    return 'Rp' + Math.round(n).toLocaleString('id-ID');
+  }
+  function numId(n){
+    return Math.round(n).toLocaleString('id-ID');
+  }
+  function nowStamp(){
+    var d = new Date();
+    var pad = function(x){ return x < 10 ? '0'+x : ''+x; };
+    return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()+', '+pad(d.getHours())+'.'+pad(d.getMinutes())+'.'+pad(d.getSeconds());
+  }
+
+  function showBanner(kind, html){
+    els.banner.className = 'banner show ' + kind;
+    els.banner.innerHTML = html;
+  }
+  function hideBanner(){
+    els.banner.className = 'banner';
+    els.banner.innerHTML = '';
+  }
+
+  function decodeBase64Utf8(b64){
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  function parseReport(csvText, fileTitle){
+    var parsed = Papa.parse(csvText, { skipEmptyLines: false });
+    var rows = parsed.data;
+
+    var headerIdx = -1;
+    var perLine = '';
+    for (var i = 0; i < rows.length; i++){
+      var r = rows[i];
+      if (!r || !r.length) continue;
+      var c0 = (r[0] || '').trim();
+      var c1 = (r[1] || '').trim();
+      if (c0.toLowerCase().indexOf('per') === 0 && c0.indexOf(':') > -1 && !perLine){
+        perLine = c0.split(':').slice(1).join(':').trim();
+      }
+      if (c0 === 'No' && c1 === 'No.Cust'){
+        headerIdx = i;
+      }
+    }
+    if (headerIdx === -1) headerIdx = 5; // fallback to known layout
+
+    var records = [];
+    for (var j = headerIdx + 1; j < rows.length; j++){
+      var row = rows[j];
+      if (!row || !row.length) continue;
+      var noCell = (row[0] || '').trim();
+      if (!/^\d+$/.test(noCell)) continue; // skip footer/summary rows
+      var jumlahRaw = (row[7] || '0').replace(/\./g, '').replace(/,/g, '.');
+      records.push({
+        noCust: (row[1] || '').trim(),
+        nama: (row[2] || '').trim(),
+        jumlah: parseFloat(jumlahRaw) || 0,
+        sa: (row[9] || '').trim(),
+        namaSA: (row[10] || '').trim(),
+        hari: parseInt(row[11], 10) || 0,
+        jenis: (row[14] || '').trim() || 'Lainnya'
+      });
+    }
+
+    var total = 0, sumHari = 0;
+    var perSA = {}, perJenis = {}, perDebitur = {};
+    var aging = {
+      '0–7 hari': 0, '8–14 hari': 0, '15–30 hari': 0,
+      '31–60 hari': 0, '61–90 hari': 0, '>90 hari': 0
+    };
+
+    records.forEach(function(r){
+      total += r.jumlah;
+      sumHari += r.hari;
+
+      var saKey = r.namaSA || r.sa || 'Tidak diketahui';
+      if (!perSA[saKey]) perSA[saKey] = { count: 0, sum: 0 };
+      perSA[saKey].count++; perSA[saKey].sum += r.jumlah;
+
+      if (!perJenis[r.jenis]) perJenis[r.jenis] = { count: 0, sum: 0 };
+      perJenis[r.jenis].count++; perJenis[r.jenis].sum += r.jumlah;
+
+      var dKey = r.noCust + '||' + r.nama;
+      if (!perDebitur[dKey]) perDebitur[dKey] = { nama: r.nama, noCust: r.noCust, count: 0, sum: 0 };
+      perDebitur[dKey].count++; perDebitur[dKey].sum += r.jumlah;
+
+      var h = r.hari;
+      if (h <= 7) aging['0–7 hari'] += r.jumlah;
+      else if (h <= 14) aging['8–14 hari'] += r.jumlah;
+      else if (h <= 30) aging['15–30 hari'] += r.jumlah;
+      else if (h <= 60) aging['31–60 hari'] += r.jumlah;
+      else if (h <= 90) aging['61–90 hari'] += r.jumlah;
+      else aging['>90 hari'] += r.jumlah;
+    });
+
+    var saArr = Object.keys(perSA).map(function(k){ return { name: k, sum: perSA[k].sum, count: perSA[k].count }; })
+      .sort(function(a,b){ return b.sum - a.sum; });
+    var jenisArr = Object.keys(perJenis).map(function(k){ return { name: k, sum: perJenis[k].sum, count: perJenis[k].count }; })
+      .sort(function(a,b){ return b.sum - a.sum; });
+    var debiturArr = Object.keys(perDebitur).map(function(k){ return perDebitur[k]; })
+      .sort(function(a,b){ return b.sum - a.sum; }).slice(0, 10);
+
+    return {
+      perLine: perLine,
+      sourceTitle: fileTitle || 'Piutang GR Adam Malik',
+      count: records.length,
+      total: total,
+      avgHari: records.length ? sumHari / records.length : 0,
+      uniqueDebitur: Object.keys(perDebitur).length,
+      perSA: saArr,
+      perJenis: jenisArr,
+      topDebitur: debiturArr,
+      aging: aging
+    };
+  }
+
+  function chartPalette(){
+    var styles = getComputedStyle(document.documentElement);
+    return {
+      accent: styles.getPropertyValue('--accent').trim() || '#2B4FDE',
+      text: styles.getPropertyValue('--text-dim').trim() || '#6D6F72',
+      grid: styles.getPropertyValue('--border').trim() || '#E4E1D9',
+      warn: styles.getPropertyValue('--warn').trim() || '#B8590A',
+      bad: styles.getPropertyValue('--bad').trim() || '#C0362C'
+    };
+  }
+
+  function destroyChart(key){
+    if (charts[key]){ charts[key].destroy(); charts[key] = null; }
+  }
+
+  function renderAgingChart(aging){
+    var pal = chartPalette();
+    var labels = Object.keys(aging);
+    var values = labels.map(function(l){ return aging[l]; });
+    var colors = labels.map(function(l){
+      if (l === '>90 hari') return pal.bad;
+      if (l === '31–60 hari' || l === '61–90 hari') return pal.warn;
+      return pal.accent;
+    });
+    destroyChart('aging');
+    var ctx = document.getElementById('agingChart').getContext('2d');
+    charts.aging = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4, maxBarThickness: 42 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: function(c){ return rupiah(c.parsed.y); } } } },
+        scales: {
+          y: { ticks: { color: pal.text, callback: function(v){ return (v/1e6).toFixed(0)+' jt'; } }, grid: { color: pal.grid } },
+          x: { ticks: { color: pal.text, font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderJenisChart(perJenis){
+    var pal = chartPalette();
+    var top = perJenis.slice(0, 6);
+    var palette = [pal.accent, '#5B7CFF', '#8AA0FF', pal.warn, '#C79A5D', pal.bad];
+    destroyChart('jenis');
+    var ctx = document.getElementById('jenisChart').getContext('2d');
+    charts.jenis = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: top.map(function(d){ return d.name; }),
+        datasets: [{ data: top.map(function(d){ return d.sum; }), backgroundColor: palette, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-elevated') }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: pal.text, boxWidth: 10, font: { size: 11 }, padding: 12 } },
+          tooltip: { callbacks: { label: function(c){ return c.label + ': ' + rupiah(c.parsed); } } }
+        }
+      }
+    });
+  }
+
+  function renderSAChart(perSA){
+    var pal = chartPalette();
+    var top = perSA.slice(0, 8);
+    destroyChart('sa');
+    var ctx = document.getElementById('saChart').getContext('2d');
+    charts.sa = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: top.map(function(d){ return d.name; }), datasets: [{ data: top.map(function(d){ return d.sum; }), backgroundColor: pal.accent, borderRadius: 4, maxBarThickness: 18 }] },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return rupiah(c.parsed.x); } } } },
+        scales: {
+          x: { ticks: { color: pal.text, callback: function(v){ return (v/1e6).toFixed(0)+' jt'; } }, grid: { color: pal.grid } },
+          y: { ticks: { color: pal.text, font: { size: 11.5 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderTopDebiturTable(list){
+    if (!list.length){
+      els.topDebiturBox.innerHTML = '<div class="skeleton">Tidak ada data.</div>';
+      return;
+    }
+    var rows = list.map(function(d, idx){
+      return '<tr>' +
+        '<td class="rank">' + (idx+1) + '</td>' +
+        '<td>' + escapeHtml(d.nama || '—') + '<br><span style="color:var(--text-faint);font-size:11.5px;">' + escapeHtml(d.noCust) + '</span></td>' +
+        '<td class="num">' + d.count + '</td>' +
+        '<td class="num">' + rupiah(d.sum) + '</td>' +
+      '</tr>';
+    }).join('');
+    els.topDebiturBox.innerHTML =
+      '<table class="data-table"><thead><tr>' +
+      '<th></th><th>Debitur</th><th style="text-align:right;">Faktur</th><th style="text-align:right;">Total piutang</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"]/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  }
+
+  function renderDashboard(data){
+    els.metaPer.innerHTML = 'Per : <b>' + (data.perLine || '—') + '</b>';
+    els.metaSumber.textContent = 'Sumber: Laporan ' + data.sourceTitle + ' (' + numId(data.count) + ' faktur)';
+    els.kpiTotal.textContent = rupiah(data.total);
+    els.kpiTotalSub.textContent = numId(data.uniqueDebitur) + ' debitur aktif';
+    els.kpiCount.textContent = numId(data.count);
+    els.kpiDebitur.textContent = numId(data.uniqueDebitur);
+    els.kpiAging.textContent = data.avgHari.toFixed(0) + ' hari';
+
+    renderAgingChart(data.aging);
+    renderJenisChart(data.perJenis);
+    renderSAChart(data.perSA);
+    renderTopDebiturTable(data.topDebitur);
+  }
+
+  // ---------- error handling per mcp.d.ts codes ----------
+  function describeError(err){
+    var code = err && err.code;
+    switch (code){
+      case 'needs_reauth':
+        return { text: 'Sesi Google Drive kadaluarsa. Hubungkan ulang lewat <b>Pengaturan → Connectors</b>.', retry: false };
+      case 'server_not_connected':
+        return { text: 'Google Drive belum terhubung. Tambahkan koneksinya di <b>Pengaturan → Connectors</b>.', retry: false };
+      case 'selection_required':
+        return { text: 'Ada beberapa akun Google Drive yang cocok — pilih salah satu lalu coba lagi.', retry: false };
+      case 'consent_required':
+        return { text: 'Izin akses ke Google Drive belum diberikan. Klik "Refresh sekarang" untuk mencoba lagi.', retry: false };
+      case 'blocked_by_policy':
+        return { text: 'Akses ke Google Drive diblokir oleh kebijakan organisasi.', retry: false };
+      case 'approval_required':
+        return { text: 'Permintaan ini butuh persetujuan tambahan dari admin organisasi.', retry: false };
+      case 'server_unavailable':
+        return { text: 'Google Drive sedang tidak bisa diakses. Mencoba lagi sebentar…', retry: true };
+      case 'rate_limited':
+        return { text: 'Terlalu banyak permintaan. Menunggu sebentar sebelum mencoba lagi…', retry: true };
+      case 'upstream_error':
+        return { text: 'Ada gangguan sementara saat menghubungi Google Drive.', retry: !!err.retryable };
+      case 'cancelled':
+        return { text: 'Permintaan sebelumnya dibatalkan.', retry: false };
+      case 'not_granted':
+      case 'capability_disabled':
+      case 'capability_removed':
+        return { text: 'Sinkronisasi otomatis tidak tersedia di tampilan ini.', retry: false };
+      case 'tool_error':
+        return { text: 'Gagal membaca isi spreadsheet' + (err.message ? (': ' + escapeHtml(err.message)) : '.'), retry: false };
+      default:
+        return { text: 'Gagal memuat data terbaru.', retry: false };
+    }
+  }
+
+  function setLoading(isLoading){
+    els.refreshBtn.disabled = isLoading;
+    els.refreshBtn.classList.toggle('loading', isLoading);
+  }
+
+  function refresh(){
+    if (!mcp){
+      showBanner('info', 'Sinkronisasi otomatis tidak tersedia di tampilan ini — buka halaman ini di claude.ai untuk menyambungkan Google Drive.');
+      els.footNote.textContent = 'Mode tanpa sinkronisasi.';
+      return Promise.resolve();
+    }
+    setLoading(true);
+    return mcp.callTool('Google Drive', 'download_file_content', {
+      fileId: FILE_ID,
+      exportMimeType: 'text/csv'
+    }, { cache: { refresh: true } }).then(function(result){
+      var payload = result && result.payload;
+      var content = payload && payload.content;
+      if (!content){
+        throw { code: 'tool_error', message: 'Berkas tidak berisi data CSV.' };
+      }
+      var csvText = decodeBase64Utf8(content);
+      var data = parseReport(csvText, (payload && payload.title) || 'GR Adam Malik');
+      renderDashboard(data);
+      hasEverSucceeded = true;
+      retriedOnce = false;
+      hideBanner();
+      els.metaSyncTime.textContent = nowStamp();
+      els.footNote.textContent = 'Data diambil langsung dari Google Sheets sumber.';
+    }).catch(function(err){
+      var d = describeError(err || {});
+      var prefix = hasEverSucceeded ? 'Menampilkan data terakhir yang berhasil disinkron. ' : '';
+      showBanner('error', '<span>' + prefix + d.text + '</span>');
+      if (d.retry && !retriedOnce){
+        retriedOnce = true;
+        var wait = (err && err.retryAfterMs) || (1500 + Math.random()*1500);
+        setTimeout(refreshWithLoadingReset, wait);
+      }
+    });
+  }
+
+  // Wrap refresh with proper finally since some environments lack Promise.finally reliability here
+  function refreshWithLoadingReset(){
+    var p = refresh();
+    if (p && p.then){
+      p.then(function(){ setLoading(false); }, function(){ setLoading(false); });
+    } else {
+      setLoading(false);
+    }
+  }
+
+  function startAuto(){
+    stopAuto();
+    timer = setInterval(refreshWithLoadingReset, AUTO_MS);
+  }
+  function stopAuto(){
+    if (timer){ clearInterval(timer); timer = null; }
+  }
+
+  els.refreshBtn.addEventListener('click', refreshWithLoadingReset);
+  els.autoToggle.addEventListener('change', function(){
+    if (els.autoToggle.checked) startAuto(); else stopAuto();
+  });
+
+  function renderNoMcpBanner(diagText){
+    var html = '<div>' +
+      '<div>Sinkronisasi otomatis belum aktif di tampilan ini. Ini biasanya karena izin akses ke konektor Google Drive belum diberikan untuk halaman ini.</div>' +
+      '<div class="banner-actions">' +
+        '<button class="link-btn" id="grantBtn">Minta izin Google Drive</button>' +
+        '<button class="link-btn" id="reloadBtn">Muat ulang halaman</button>' +
+      '</div>' +
+      (diagText ? ('<div class="diag">' + escapeHtml(diagText) + '</div>') : '') +
+    '</div>';
+    showBanner('info', html);
+    var grantBtn = document.getElementById('grantBtn');
+    var reloadBtn = document.getElementById('reloadBtn');
+    if (grantBtn) grantBtn.addEventListener('click', requestDrivePermission);
+    if (reloadBtn) reloadBtn.addEventListener('click', function(){ location.reload(); });
+  }
+
+  function requestDrivePermission(){
+    if (!window.claude || !window.claude.use){
+      renderNoMcpBanner('window.claude tidak tersedia di frame ini.');
+      return;
+    }
+    window.claude.use('permissions').then(function(perm){
+      if (!perm){
+        renderNoMcpBanner('Capability "permissions" tidak tersedia di tampilan ini (diagnosis: use("permissions") = null).');
+        return;
+      }
+      return perm.request(['mcp:Google Drive']).then(function(states){
+        var diag = 'Status setelah diminta: ' + JSON.stringify(states);
+        renderNoMcpBanner(diag);
+        // coba lagi setelah izin diberikan/ditolak
+        setTimeout(boot, 400);
+      });
+    }).catch(function(err){
+      renderNoMcpBanner('Gagal meminta izin: ' + (err && err.message ? err.message : String(err)));
+    });
+  }
+
+  function boot(){
+    if (window.claude && window.claude.use){
+      window.claude.use('mcp').then(function(ns){
+        mcp = ns;
+        if (!mcp){
+          // diagnosa lebih lanjut lewat capability permissions, kalau tersedia
+          window.claude.use('permissions').then(function(perm){
+            if (!perm){
+              renderNoMcpBanner('use("mcp") = null, use("permissions") = null.');
+              return;
+            }
+            return perm.state().then(function(states){
+              renderNoMcpBanner('use("mcp") = null. Status izin saat ini: ' + JSON.stringify(states));
+            }).catch(function(){
+              renderNoMcpBanner('use("mcp") = null. Gagal membaca status izin.');
+            });
+          }).catch(function(){
+            renderNoMcpBanner('use("mcp") = null. Capability "permissions" gagal dimuat.');
+          });
+          els.footNote.textContent = 'Mode tanpa sinkronisasi.';
+          return;
+        }
+        hideBanner();
+        refreshWithLoadingReset();
+        if (els.autoToggle.checked) startAuto();
+      }).catch(function(err){
+        renderNoMcpBanner('use("mcp") gagal: ' + (err && err.message ? err.message : String(err)));
+      });
+    } else {
+      renderNoMcpBanner('window.claude tidak ada di frame ini (kemungkinan dibuka di luar claude.ai).');
+      els.footNote.textContent = 'Mode tanpa sinkronisasi.';
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
