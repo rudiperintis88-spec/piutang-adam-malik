@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
 <style>
   :root{
     --bg: #F7F6F3;
@@ -488,71 +488,95 @@
   }
 
   function renderAgingChart(aging){
-    var pal = chartPalette();
-    var labels = Object.keys(aging);
-    var values = labels.map(function(l){ return aging[l]; });
-    var colors = labels.map(function(l){
-      if (l === '>90 hari') return pal.bad;
-      if (l === '31–60 hari' || l === '61–90 hari') return pal.warn;
-      return pal.accent;
-    });
-    destroyChart('aging');
-    var ctx = document.getElementById('agingChart').getContext('2d');
-    charts.aging = new Chart(ctx, {
-      type: 'bar',
-      data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4, maxBarThickness: 42 }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false },
-          tooltip: { callbacks: { label: function(c){ return rupiah(c.parsed.y); } } } },
-        scales: {
-          y: { ticks: { color: pal.text, callback: function(v){ return (v/1e6).toFixed(0)+' jt'; } }, grid: { color: pal.grid } },
-          x: { ticks: { color: pal.text, font: { size: 11 } }, grid: { display: false } }
+    if (typeof Chart === 'undefined'){
+      document.getElementById('agingChart').closest('.chart-box').innerHTML = '<div class="skeleton">Grafik tidak bisa dimuat (Chart.js gagal load).</div>';
+      return;
+    }
+    try{
+      var pal = chartPalette();
+      var labels = Object.keys(aging);
+      var values = labels.map(function(l){ return aging[l]; });
+      var colors = labels.map(function(l){
+        if (l === '>90 hari') return pal.bad;
+        if (l === '31–60 hari' || l === '61–90 hari') return pal.warn;
+        return pal.accent;
+      });
+      destroyChart('aging');
+      var ctx = document.getElementById('agingChart').getContext('2d');
+      charts.aging = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4, maxBarThickness: 42 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: function(c){ return rupiah(c.parsed.y); } } } },
+          scales: {
+            y: { ticks: { color: pal.text, callback: function(v){ return (v/1e6).toFixed(0)+' jt'; } }, grid: { color: pal.grid } },
+            x: { ticks: { color: pal.text, font: { size: 11 } }, grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    } catch(e){
+      document.getElementById('agingChart').closest('.chart-box').innerHTML = '<div class="skeleton">Gagal menggambar grafik.</div>';
+    }
   }
 
   function renderJenisChart(perJenis){
-    var pal = chartPalette();
-    var top = perJenis.slice(0, 6);
-    var palette = [pal.accent, '#5B7CFF', '#8AA0FF', pal.warn, '#C79A5D', pal.bad];
-    destroyChart('jenis');
-    var ctx = document.getElementById('jenisChart').getContext('2d');
-    charts.jenis = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: top.map(function(d){ return d.name; }),
-        datasets: [{ data: top.map(function(d){ return d.sum; }), backgroundColor: palette, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-elevated') }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: pal.text, boxWidth: 10, font: { size: 11 }, padding: 12 } },
-          tooltip: { callbacks: { label: function(c){ return c.label + ': ' + rupiah(c.parsed); } } }
+    if (typeof Chart === 'undefined'){
+      document.getElementById('jenisChart').closest('.chart-box').innerHTML = '<div class="skeleton">Grafik tidak bisa dimuat (Chart.js gagal load).</div>';
+      return;
+    }
+    try{
+      var pal = chartPalette();
+      var top = perJenis.slice(0, 6);
+      var palette = [pal.accent, '#5B7CFF', '#8AA0FF', pal.warn, '#C79A5D', pal.bad];
+      destroyChart('jenis');
+      var ctx = document.getElementById('jenisChart').getContext('2d');
+      charts.jenis = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: top.map(function(d){ return d.name; }),
+          datasets: [{ data: top.map(function(d){ return d.sum; }), backgroundColor: palette, borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-elevated') }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: pal.text, boxWidth: 10, font: { size: 11 }, padding: 12 } },
+            tooltip: { callbacks: { label: function(c){ return c.label + ': ' + rupiah(c.parsed); } } }
+          }
         }
-      }
-    });
+      });
+    } catch(e){
+      document.getElementById('jenisChart').closest('.chart-box').innerHTML = '<div class="skeleton">Gagal menggambar grafik.</div>';
+    }
   }
 
   function renderSAChart(perSA){
-    var pal = chartPalette();
-    var top = perSA.slice(0, 8);
-    destroyChart('sa');
-    var ctx = document.getElementById('saChart').getContext('2d');
-    charts.sa = new Chart(ctx, {
-      type: 'bar',
-      data: { labels: top.map(function(d){ return d.name; }), datasets: [{ data: top.map(function(d){ return d.sum; }), backgroundColor: pal.accent, borderRadius: 4, maxBarThickness: 18 }] },
-      options: {
-        indexAxis: 'y',
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return rupiah(c.parsed.x); } } } },
-        scales: {
-          x: { ticks: { color: pal.text, callback: function(v){ return (v/1e6).toFixed(0)+' jt'; } }, grid: { color: pal.grid } },
-          y: { ticks: { color: pal.text, font: { size: 11.5 } }, grid: { display: false } }
+    if (typeof Chart === 'undefined'){
+      document.getElementById('saChart').closest('.chart-box').innerHTML = '<div class="skeleton">Grafik tidak bisa dimuat (Chart.js gagal load).</div>';
+      return;
+    }
+    try{
+      var pal = chartPalette();
+      var top = perSA.slice(0, 8);
+      destroyChart('sa');
+      var ctx = document.getElementById('saChart').getContext('2d');
+      charts.sa = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: top.map(function(d){ return d.name; }), datasets: [{ data: top.map(function(d){ return d.sum; }), backgroundColor: pal.accent, borderRadius: 4, maxBarThickness: 18 }] },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return rupiah(c.parsed.x); } } } },
+          scales: {
+            x: { ticks: { color: pal.text, callback: function(v){ return (v/1e6).toFixed(0)+' jt'; } }, grid: { color: pal.grid } },
+            y: { ticks: { color: pal.text, font: { size: 11.5 } }, grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    } catch(e){
+      document.getElementById('saChart').closest('.chart-box').innerHTML = '<div class="skeleton">Gagal menggambar grafik.</div>';
+    }
   }
 
   function renderTopDebiturTable(list){
@@ -589,10 +613,10 @@
     els.kpiDebitur.textContent = numId(data.uniqueDebitur);
     els.kpiAging.textContent = data.avgHari.toFixed(0) + ' hari';
 
-    renderAgingChart(data.aging);
-    renderJenisChart(data.perJenis);
-    renderSAChart(data.perSA);
-    renderTopDebiturTable(data.topDebitur);
+    try { renderAgingChart(data.aging); } catch(e){ console.error('aging chart', e); }
+    try { renderJenisChart(data.perJenis); } catch(e){ console.error('jenis chart', e); }
+    try { renderSAChart(data.perSA); } catch(e){ console.error('sa chart', e); }
+    try { renderTopDebiturTable(data.topDebitur); } catch(e){ console.error('debitur table', e); }
   }
 
   // ---------- error handling per mcp.d.ts codes ----------
