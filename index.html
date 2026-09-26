@@ -329,6 +329,7 @@
 
   var FILE_ID = "1tAZ5uaibOLfxr8ALyBe2yV128W5TU230h_DdsKpv44M";
   var AUTO_MS = 60000;
+  var FALLBACK_DATA = {"perLine":"23-Sep-2026","sourceTitle":"GR Adam Malik","count":1347,"total":1355850383,"avgHari":17.94580549368968,"uniqueDebitur":68,"perSA":[{"name":"DEDI ASDHARMA","sum":183216133,"count":118},{"name":"M.NUR SYAHPUTRA","sum":178947207,"count":170},{"name":"M. KHOIR AL HUDA","sum":172346792,"count":137},{"name":"TOMY SURYA","sum":154252379,"count":169},{"name":"ADHITIA DWI PRASETYA","sum":151225453,"count":144},{"name":"YUDI RAHMANTO","sum":131202642,"count":141},{"name":"RUDIANTO","sum":103345505,"count":114},{"name":"M. FAHMI SIREGAR","sum":97807676,"count":139},{"name":"HENGKI PRANATA","sum":93995596,"count":101},{"name":"POPO HARIANSYAH","sum":85974300,"count":109},{"name":"PARTMAN","sum":2372700,"count":3},{"name":"#N/A","sum":1164000,"count":2}],"perJenis":[{"name":"TWC/ FREE PART","sum":1172699313,"count":1090},{"name":"PKS","sum":68578689,"count":44},{"name":"CUSTOMER","sum":56937992,"count":47},{"name":"SBE","sum":39830713,"count":130},{"name":"FREE OLI","sum":13161676,"count":26},{"name":"T-CARE LITE+","sum":4642000,"count":10}],"topDebitur":[{"nama":"TOYOTA-ASTRA MOTOR (TAM), PT","noCust":"B0019179TAM","count":874,"sum":804674925},{"nama":"TOYOTA-ASTRA MOTOR, PT","noCust":"B0017254TAM","count":216,"sum":368024388},{"nama":"TOYOTA-ASTRA MOTOR, PT","noCust":"B0038668TAM","count":35,"sum":17025513},{"nama":"KARYA AGUNG SAWITA,PT","noCust":"B0011607KAR","count":4,"sum":14116578},{"nama":"PERINTIS PERKASA,PT","noCust":"B0013953PER","count":26,"sum":13161676},{"nama":"PERINTIS PERKASA,PT","noCust":"B0000008PP","count":49,"sum":11421900},{"nama":"DISPERINDAGKOP & UKM KOTA MEDAN","noCust":"B0049087DIS","count":2,"sum":9889410},{"nama":"MADINA AGROLESTARI, PT","noCust":"B0014233PT","count":2,"sum":9358433},{"nama":"RAMADHAN QODHRI HARAHAP","noCust":"B0032745RQH","count":1,"sum":9238000},{"nama":"BANK MAYAPADA INTERNASIONAL TBK,PT","noCust":"B0014090BAN","count":4,"sum":7152389}],"aging":{"0–7 hari":148493556,"8–14 hari":297333773,"15–30 hari":867953781,"31–60 hari":25126073,"61–90 hari":466200,">90 hari":16477000}};
 
   var mcp = null;
   var timer = null;
@@ -731,36 +732,42 @@
   }
 
   function boot(){
+    // 1) Tampilkan dulu data snapshot yang sudah tertanam, supaya laporan langsung terbaca
+    //    walaupun live-sync ke Google Drive belum/tidak bisa jalan di tampilan ini.
+    renderDashboard(FALLBACK_DATA);
+    els.metaSyncTime.textContent = 'data snapshot (belum live)';
+    els.footNote.textContent = 'Menampilkan data snapshot. Mencoba menyambungkan ke Google Drive untuk data langsung…';
+
+    // 2) Baru coba sambungkan live-sync via mcp capability.
     if (window.claude && window.claude.use){
       window.claude.use('mcp').then(function(ns){
         mcp = ns;
         if (!mcp){
-          // diagnosa lebih lanjut lewat capability permissions, kalau tersedia
           window.claude.use('permissions').then(function(perm){
             if (!perm){
-              renderNoMcpBanner('use("mcp") = null, use("permissions") = null.');
+              renderNoMcpBanner('use("mcp") = null, use("permissions") = null. Menampilkan data snapshot.');
               return;
             }
             return perm.state().then(function(states){
-              renderNoMcpBanner('use("mcp") = null. Status izin saat ini: ' + JSON.stringify(states));
+              renderNoMcpBanner('use("mcp") = null. Status izin saat ini: ' + JSON.stringify(states) + '. Menampilkan data snapshot.');
             }).catch(function(){
-              renderNoMcpBanner('use("mcp") = null. Gagal membaca status izin.');
+              renderNoMcpBanner('use("mcp") = null. Gagal membaca status izin. Menampilkan data snapshot.');
             });
           }).catch(function(){
-            renderNoMcpBanner('use("mcp") = null. Capability "permissions" gagal dimuat.');
+            renderNoMcpBanner('use("mcp") = null. Capability "permissions" gagal dimuat. Menampilkan data snapshot.');
           });
-          els.footNote.textContent = 'Mode tanpa sinkronisasi.';
+          els.footNote.textContent = 'Mode snapshot (tanpa sinkronisasi langsung).';
           return;
         }
         hideBanner();
         refreshWithLoadingReset();
         if (els.autoToggle.checked) startAuto();
       }).catch(function(err){
-        renderNoMcpBanner('use("mcp") gagal: ' + (err && err.message ? err.message : String(err)));
+        renderNoMcpBanner('use("mcp") gagal: ' + (err && err.message ? err.message : String(err)) + '. Menampilkan data snapshot.');
       });
     } else {
-      renderNoMcpBanner('window.claude tidak ada di frame ini (kemungkinan dibuka di luar claude.ai).');
-      els.footNote.textContent = 'Mode tanpa sinkronisasi.';
+      renderNoMcpBanner('window.claude tidak ada di frame ini (kemungkinan dibuka di luar claude.ai). Menampilkan data snapshot.');
+      els.footNote.textContent = 'Mode snapshot (tanpa sinkronisasi langsung).';
     }
   }
 
