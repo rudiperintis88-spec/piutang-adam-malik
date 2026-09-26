@@ -341,6 +341,30 @@
 
   .empty-state{ text-align:center; color: var(--text-faint); font-size: 13.5px; padding: 24px 0; }
 
+  /* ---------- page-level sheet tabs ---------- */
+  .page-tabs{
+    display:flex; gap: 2px; margin-top: 20px; border-bottom: 1px solid var(--border);
+  }
+  .page-tab{
+    font-family: inherit; font-size: 13.5px; font-weight: 600;
+    padding: 10px 20px; cursor: pointer;
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    background: var(--bg); color: var(--text-dim);
+    position: relative; top: 1px;
+  }
+  .page-tab.active{
+    background: var(--bg-elevated); color: var(--text); border-bottom: 1px solid var(--bg-elevated);
+  }
+  .tab-panel{ margin-top: 20px; }
+  .jenis-grid{ display:flex; flex-wrap:wrap; gap: 10px; }
+  .jenis-chip{
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; min-width: 118px;
+  }
+  .jenis-chip .m-label{ font-size: 11.5px; color: var(--text-dim); }
+  .jenis-chip .m-value{ font-weight: 700; font-size: 13.5px; margin-top: 2px; }
+  .jenis-chip .m-count{ font-size: 10.5px; color: var(--text-faint); margin-top: 1px; }
+
   @media (max-width: 700px){
     .bucket-grid{ grid-template-columns: repeat(2, 1fr); }
     table.data-table{ font-size: 12px; }
@@ -378,67 +402,76 @@
 
   <div class="banner" id="banner"></div>
 
-  <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi"><p class="label">Total piutang</p><p class="value" id="kpiTotal">—</p><p class="sub" id="kpiTotalSub">&nbsp;</p></div>
-    <div class="kpi"><p class="label">Jumlah faktur</p><p class="value" id="kpiCount">—</p><p class="sub">baris transaksi</p></div>
-    <div class="kpi"><p class="label">Jumlah debitur</p><p class="value" id="kpiDebitur">—</p><p class="sub">No. Cust unik</p></div>
-    <div class="kpi"><p class="label">Rata-rata umur piutang</p><p class="value" id="kpiAging">—</p><p class="sub">hari sejak jatuh tempo</p></div>
+  <div class="page-tabs" id="pageTabs">
+    <button class="page-tab active" data-tab="ringkasan">Ringkasan</button>
+    <button class="page-tab" data-tab="rincian">Rincian per Entitas</button>
   </div>
 
-  <div class="panel-row">
-    <div class="panel">
-      <h2>Umur piutang (aging)</h2>
-      <p class="panel-sub">Total nilai piutang dikelompokkan berdasarkan lama hari sejak jatuh tempo</p>
-      <div class="chart-box"><canvas id="agingChart"></canvas></div>
+  <div class="tab-panel" id="tabRingkasan">
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi"><p class="label">Total piutang</p><p class="value" id="kpiTotal">—</p><p class="sub" id="kpiTotalSub">&nbsp;</p></div>
+      <div class="kpi"><p class="label">Jumlah faktur</p><p class="value" id="kpiCount">—</p><p class="sub">baris transaksi</p></div>
+      <div class="kpi"><p class="label">Jumlah debitur</p><p class="value" id="kpiDebitur">—</p><p class="sub">No. Cust unik</p></div>
+      <div class="kpi"><p class="label">Rata-rata umur piutang</p><p class="value" id="kpiAging">—</p><p class="sub">hari sejak jatuh tempo</p></div>
     </div>
-    <div class="panel">
-      <h2>Komposisi per jenis transaksi</h2>
-      <p class="panel-sub">Berdasarkan kolom Jenis</p>
-      <div class="chart-box"><canvas id="jenisChart"></canvas></div>
+
+    <div class="panel-row">
+      <div class="panel">
+        <h2>Umur piutang (aging)</h2>
+        <p class="panel-sub">Total nilai piutang dikelompokkan berdasarkan lama hari sejak jatuh tempo</p>
+        <div class="chart-box"><canvas id="agingChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Komposisi per jenis transaksi</h2>
+        <p class="panel-sub">Berdasarkan kolom Jenis</p>
+        <div class="chart-box"><canvas id="jenisChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel-row">
+      <div class="panel">
+        <h2>Debitur dengan piutang terbesar</h2>
+        <p class="panel-sub">10 No. Cust dengan total nilai piutang tertinggi</p>
+        <div id="topDebiturBox"><div class="skeleton">Memuat data…</div></div>
+      </div>
+      <div class="panel">
+        <h2>Piutang per kolektor (SA)</h2>
+        <p class="panel-sub">Total nilai piutang yang ditangani tiap SA</p>
+        <div class="chart-box tall"><canvas id="saChart"></canvas></div>
+      </div>
     </div>
   </div>
 
-  <div class="panel-row">
-    <div class="panel">
-      <h2>Debitur dengan piutang terbesar</h2>
-      <p class="panel-sub">10 No. Cust dengan total nilai piutang tertinggi</p>
-      <div id="topDebiturBox"><div class="skeleton">Memuat data…</div></div>
-    </div>
-    <div class="panel">
-      <h2>Piutang per kolektor (SA)</h2>
-      <p class="panel-sub">Total nilai piutang yang ditangani tiap SA</p>
-      <div class="chart-box tall"><canvas id="saChart"></canvas></div>
-    </div>
-  </div>
-
-  <div class="panel panel-wide" style="margin-top:16px;">
-    <div class="drill-head">
-      <div>
-        <h2>Rincian per entitas</h2>
-        <p class="panel-sub">Klik nama untuk lihat rincian per bulan jatuh tempo dan daftar fakturnya</p>
+  <div class="tab-panel" id="tabRincian" style="display:none;">
+    <div class="panel panel-wide">
+      <div class="drill-head">
+        <div>
+          <h2>Rincian per entitas</h2>
+          <p class="panel-sub">Klik nama untuk lihat rincian per bulan jatuh tempo, per jenis transaksi, dan daftar fakturnya</p>
+        </div>
+        <div class="tabs" id="groupTabs">
+          <button class="tab-btn active" data-mode="debitur">Per Debitur</button>
+          <button class="tab-btn" data-mode="sa">Per Kolektor (SA)</button>
+        </div>
       </div>
-      <div class="tabs" id="groupTabs">
-        <button class="tab-btn active" data-mode="debitur">Per Debitur</button>
-        <button class="tab-btn" data-mode="sa">Per Kolektor (SA)</button>
+
+      <div class="summary-card">
+        <div>
+          <p class="label">Total piutang berjalan</p>
+          <p class="big-value" id="grpTotal">—</p>
+        </div>
+        <div class="summary-right">
+          <p class="label" id="grpCountLabel">Jumlah faktur · entitas</p>
+          <p class="big-value" id="grpCount">—</p>
+        </div>
       </div>
+
+      <div class="bucket-grid" id="bucketGrid"></div>
+
+      <input type="text" id="searchInput" class="search-input" placeholder="Cari nama debitur…">
+
+      <div id="groupList"></div>
     </div>
-
-    <div class="summary-card">
-      <div>
-        <p class="label">Total piutang berjalan</p>
-        <p class="big-value" id="grpTotal">—</p>
-      </div>
-      <div class="summary-right">
-        <p class="label" id="grpCountLabel">Jumlah faktur · entitas</p>
-        <p class="big-value" id="grpCount">—</p>
-      </div>
-    </div>
-
-    <div class="bucket-grid" id="bucketGrid"></div>
-
-    <input type="text" id="searchInput" class="search-input" placeholder="Cari nama debitur…">
-
-    <div id="groupList"></div>
   </div>
 
   <footer class="sync-foot" id="footNote">Menghubungkan ke Google Drive…</footer>
@@ -880,19 +913,39 @@
     });
   }
 
+  var JENIS_ORDER = ['SBE','PKS','CUSTOMER','FREE OLI','T-CARE LITE+','TWC/ FREE PART'];
+
   function renderGroupDetail(g){
     var byMonth = {};
+    var byJenis = {};
     g.records.forEach(function(r){
       var dt = parseDateDMY(r.tglJto);
       var mKey = dt ? (dt.y + '-' + (dt.m < 10 ? '0'+dt.m : dt.m)) : 'lainnya';
       var mLabel = dt ? (MONTH_NAMES[dt.m - 1] + ' ' + dt.y) : 'Tanggal lainnya';
       if (!byMonth[mKey]) byMonth[mKey] = { label: mLabel, sum: 0 };
       byMonth[mKey].sum += r.jumlah;
+
+      var jKey = r.jenis || 'Lainnya';
+      if (!byJenis[jKey]) byJenis[jKey] = { sum: 0, count: 0 };
+      byJenis[jKey].sum += r.jumlah;
+      byJenis[jKey].count++;
     });
     var monthKeys = Object.keys(byMonth).sort();
     var monthHtml = monthKeys.map(function(k){
       return '<div class="month-chip"><div class="m-label">' + escapeHtml(byMonth[k].label) + '</div>' +
         '<div class="m-value">' + rupiah(byMonth[k].sum) + '</div></div>';
+    }).join('');
+
+    var jenisKeys = Object.keys(byJenis).sort(function(a, b){
+      var ia = JENIS_ORDER.indexOf(a), ib = JENIS_ORDER.indexOf(b);
+      if (ia === -1) ia = 99; if (ib === -1) ib = 99;
+      if (ia !== ib) return ia - ib;
+      return byJenis[b].sum - byJenis[a].sum;
+    });
+    var jenisHtml = jenisKeys.map(function(k){
+      return '<div class="jenis-chip"><div class="m-label">' + escapeHtml(k) + '</div>' +
+        '<div class="m-value">' + rupiah(byJenis[k].sum) + '</div>' +
+        '<div class="m-count">' + numId(byJenis[k].count) + ' faktur</div></div>';
     }).join('');
 
     var sortedRecords = g.records.slice().sort(function(a,b){
@@ -913,6 +966,8 @@
     return '<div class="group-detail">' +
       '<div class="detail-block-label">TOTAL PIUTANG</div>' +
       '<div class="total-chip"><div class="t-label">Total keseluruhan</div><div class="t-value">' + rupiah(g.sum) + '</div></div>' +
+      '<div class="detail-block-label">RINCIAN PER JENIS TRANSAKSI</div>' +
+      '<div class="jenis-grid">' + (jenisHtml || '<span class="empty-state">Tidak ada data.</span>') + '</div>' +
       '<div class="detail-block-label">RINCIAN PER BULAN (TGL JATUH TEMPO)</div>' +
       '<div class="month-grid">' + (monthHtml || '<span class="empty-state">Tidak ada data.</span>') + '</div>' +
       '<div class="detail-block-label">DAFTAR FAKTUR (' + g.count + ')</div>' +
@@ -940,6 +995,29 @@
       groupState.search = groupEls.searchInput.value;
       groupState.expandedKey = null;
       renderGroupSection();
+    });
+  }
+
+  // ---------- page-level sheet tabs (Ringkasan / Rincian per Entitas) ----------
+  var pageTabsEl = document.getElementById('pageTabs');
+  var tabPanels = {
+    ringkasan: document.getElementById('tabRingkasan'),
+    rincian: document.getElementById('tabRincian')
+  };
+  if (pageTabsEl){
+    Array.prototype.forEach.call(pageTabsEl.querySelectorAll('.page-tab'), function(btn){
+      btn.addEventListener('click', function(){
+        Array.prototype.forEach.call(pageTabsEl.querySelectorAll('.page-tab'), function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var target = btn.getAttribute('data-tab');
+        Object.keys(tabPanels).forEach(function(k){
+          if (tabPanels[k]) tabPanels[k].style.display = (k === target) ? '' : 'none';
+        });
+        // Chart.js butuh ukuran kontainer yang sudah terlihat; gambar ulang saat tab Ringkasan ditampilkan lagi
+        if (target === 'ringkasan'){
+          Object.keys(charts).forEach(function(k){ if (charts[k]) charts[k].resize(); });
+        }
+      });
     });
   }
 
