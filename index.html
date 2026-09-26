@@ -1063,8 +1063,14 @@
 
   function refresh(){
     if (!mcp){
-      showBanner('info', 'Sinkronisasi otomatis tidak tersedia di tampilan ini — buka halaman ini di claude.ai untuk menyambungkan Google Drive.');
-      els.footNote.textContent = 'Mode tanpa sinkronisasi.';
+      if (syncMode === 'db'){
+        // Jalur db (push dari asisten) sudah aktif dan reaktif — tombol/auto-refresh
+        // di sini tidak perlu (dan tidak bisa) menarik ulang Google Sheets sendiri,
+        // jadi cukup jangan timpa status yang sudah baik dengan pesan error.
+        return Promise.resolve();
+      }
+      renderNoMcpBanner('Tombol refresh butuh izin Google Drive (use("mcp") tidak tersedia), dan jalur db juga belum aktif.');
+      els.footNote.textContent = 'Mode tanpa sinkronisasi langsung.';
       return Promise.resolve();
     }
     setLoading(true);
