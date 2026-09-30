@@ -712,7 +712,7 @@ async function loadData() {
 
     const now = new Date();
     statusEl.classList.remove('err');
-    statusEl.innerHTML = 'Terakhir disinkron: <b>' + now.toLocaleString('id-ID') + '</b> &middot; ' + COL_INFO;
+    statusEl.innerHTML = 'Terakhir disinkron: <b>' + now.toLocaleString('id-ID') + '</b>';
   } catch (err) {
     statusEl.classList.add('err');
     statusEl.textContent = 'Gagal memuat data.';
